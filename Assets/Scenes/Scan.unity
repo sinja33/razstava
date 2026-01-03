@@ -246,6 +246,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &346351376
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 346351378}
+  - component: {fileID: 346351377}
+  m_Layer: 0
+  m_Name: RevealManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &346351377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 346351376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13a2ab4e9fe52a2439e977fe1163c356, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlaneRevealManager
+  planeManager: {fileID: 897128820}
+  cameraTransform: {fileID: 1291523835}
+  revealDistance: 10
+  revealAngle: 30
+  fadeInDuration: 1
+  targetCoverage: 0.8
+--- !u!4 &346351378
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 346351376}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.92962, y: 0, z: 1.9391}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &404420387
 GameObject:
   m_ObjectHideFlags: 0
@@ -357,8 +407,8 @@ MonoBehaviour:
   <trackablesChanged>k__BackingField:
     m_PersistentCalls:
       m_Calls: []
-  m_PlanePrefab: {fileID: 1285115100117500945, guid: ee53a5ff4ce7c74409baf1487ae5a186, type: 3}
-  m_DetectionMode: -1
+  m_PlanePrefab: {fileID: 2827333029124976651, guid: db0d2ea48ca832945baf19b6ed9b17d7, type: 3}
+  m_DetectionMode: 3
 --- !u!1 &1245071563
 GameObject:
   m_ObjectHideFlags: 0
@@ -612,7 +662,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.1
+  near clip plane: 0.2
   far clip plane: 20
   field of view: 60
   orthographic: 0
@@ -733,3 +783,4 @@ SceneRoots:
   - {fileID: 897128819}
   - {fileID: 2010850382}
   - {fileID: 404420389}
+  - {fileID: 346351378}
