@@ -16,14 +16,23 @@ public class PlaneRevealManager : MonoBehaviour
     [Header("Coverage")]
     [SerializeField] private float targetCoverage = 0.8f;
     
+    [Header("Solidify Materials")]
+    [SerializeField] private Material floorSolidMaterial;
+    [SerializeField] private Material wallSolidMaterial;
+    [SerializeField] private float solidifyDuration = 2f;
+    
     private Dictionary<ARPlane, PlaneRevealState> planeStates = new Dictionary<ARPlane, PlaneRevealState>();
     private bool transitionTriggered = false;
+    private bool isSolidifying = false;
+    private float solidifyProgress = 0f;
     
     public float CurrentCoverage { get; private set; }
     public bool IsComplete => CurrentCoverage >= targetCoverage;
+    public bool IsSolidified => solidifyProgress >= 1f;
     
-    // Event for when scanning is complete
+    // Events
     public System.Action OnScanningComplete;
+    public System.Action OnSolidifyComplete;
     
     private class PlaneRevealState
     {
@@ -31,6 +40,8 @@ public class PlaneRevealManager : MonoBehaviour
         public float revealProgress;
         public MeshRenderer renderer;
         public Material material;
+        public Material originalMaterial;
+        public bool isFloor;
     }
     
     void Start()
@@ -52,13 +63,11 @@ public class PlaneRevealManager : MonoBehaviour
     
     void OnPlanesChanged(ARPlanesChangedEventArgs args)
     {
-        // Handle new planes
         foreach (var plane in args.added)
         {
             SetupPlane(plane);
         }
         
-        // Handle removed planes
         foreach (var plane in args.removed)
         {
             if (planeStates.ContainsKey(plane))
@@ -73,8 +82,14 @@ public class PlaneRevealManager : MonoBehaviour
         var renderer = plane.GetComponent<MeshRenderer>();
         if (renderer == null) return;
         
-        // Create instance of material so we can fade individually
         var material = renderer.material;
+        
+        // Check if this is a floor (horizontal plane facing up, below camera)
+        bool isHorizontal = Mathf.Abs(Vector3.Dot(plane.normal, Vector3.up)) > 0.7f;
+        bool isBelowCamera = plane.center.y < cameraTransform.position.y - 0.5f;
+        bool isFloor = isHorizontal && isBelowCamera;
+        
+        Debug.Log($"Plane detected: horizontal={isHorizontal}, belowCamera={isBelowCamera}, isFloor={isFloor}, classification={plane.classification}");
         
         // Start invisible
         SetMaterialAlpha(material, 0f);
@@ -84,21 +99,30 @@ public class PlaneRevealManager : MonoBehaviour
             isRevealed = false,
             revealProgress = 0f,
             renderer = renderer,
-            material = material
+            material = material,
+            originalMaterial = material,
+            isFloor = isFloor
         };
     }
     
     void Update()
     {
-        CheckGaze();
-        UpdateFading();
-        
-        // Check for completion
-        if (IsComplete && !transitionTriggered)
+        if (!isSolidifying)
         {
-            transitionTriggered = true;
-            OnScanningComplete?.Invoke();
-            Debug.Log("Scanning complete! Coverage: " + (CurrentCoverage * 100f) + "%");
+            CheckGaze();
+            UpdateFading();
+            
+            if (IsComplete && !transitionTriggered)
+            {
+                transitionTriggered = true;
+                OnScanningComplete?.Invoke();
+                Debug.Log("Scanning complete! Starting solidify...");
+                StartSolidify();
+            }
+        }
+        else
+        {
+            UpdateSolidify();
         }
     }
     
@@ -112,16 +136,13 @@ public class PlaneRevealManager : MonoBehaviour
             if (state.isRevealed) continue;
             if (plane == null) continue;
             
-            // Check if looking at this plane
             Vector3 toPlane = plane.center - cameraTransform.position;
             float distance = toPlane.magnitude;
             float angle = Vector3.Angle(cameraTransform.forward, toPlane);
             
             if (distance <= revealDistance && angle <= revealAngle)
             {
-                // Start revealing
                 state.isRevealed = true;
-                Debug.Log("Revealing plane: " + plane.trackableId);
                 UpdateCoverage();
             }
         }
@@ -137,7 +158,7 @@ public class PlaneRevealManager : MonoBehaviour
             state.revealProgress += Time.deltaTime / fadeInDuration;
             state.revealProgress = Mathf.Clamp01(state.revealProgress);
             
-            SetMaterialAlpha(state.material, state.revealProgress * 0.5f); // 0.5 = target alpha
+            SetMaterialAlpha(state.material, state.revealProgress * 0.5f);
         }
     }
     
@@ -166,6 +187,73 @@ public class PlaneRevealManager : MonoBehaviour
         }
         
         CurrentCoverage = (float)revealed / planeStates.Count;
-        Debug.Log($"Coverage: {revealed}/{planeStates.Count} = {CurrentCoverage * 100f}%");
+    }
+    
+    // ===== SOLIDIFY =====
+    
+    public void StartSolidify()
+    {
+        isSolidifying = true;
+        solidifyProgress = 0f;
+        
+        // Swap materials to solid versions
+        foreach (var kvp in planeStates)
+        {
+            var state = kvp.Value;
+            if (state.renderer == null) continue;
+            
+            Material targetMaterial = state.isFloor ? floorSolidMaterial : wallSolidMaterial;
+            
+            if (targetMaterial != null)
+            {
+                // Create instance so we can fade it
+                Material matInstance = new Material(targetMaterial);
+                SetMaterialAlpha(matInstance, 0f);
+                state.renderer.material = matInstance;
+                state.material = matInstance;
+            }
+        }
+    }
+    
+    void UpdateSolidify()
+    {
+        solidifyProgress += Time.deltaTime / solidifyDuration;
+        solidifyProgress = Mathf.Clamp01(solidifyProgress);
+        
+        foreach (var state in planeStates.Values)
+        {
+            if (state.renderer == null) continue;
+            
+            // Fade from transparent to fully opaque
+            SetMaterialAlpha(state.material, solidifyProgress);
+            
+            // Also need to change surface type to opaque at the end
+            if (solidifyProgress >= 1f && state.material.HasProperty("_Surface"))
+            {
+                state.material.SetFloat("_Surface", 0); // 0 = Opaque
+            }
+        }
+        
+        if (solidifyProgress >= 1f)
+        {
+            isSolidifying = false;
+            OnSolidifyComplete?.Invoke();
+            Debug.Log("Solidify complete! Now in VR room.");
+        }
+    }
+    
+    // Manual trigger for testing
+    [ContextMenu("Force Complete Scanning")]
+    public void ForceCompleteScan()
+    {
+        foreach (var state in planeStates.Values)
+        {
+            state.isRevealed = true;
+            state.revealProgress = 1f;
+        }
+        CurrentCoverage = 1f;
+        transitionTriggered = true;
+        OnScanningComplete?.Invoke();
+        StartSolidify();
     }
 }

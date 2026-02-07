@@ -281,6 +281,9 @@ MonoBehaviour:
   revealAngle: 30
   fadeInDuration: 1
   targetCoverage: 0.8
+  floorSolidMaterial: {fileID: 2100000, guid: 8d3648470c3ce6347bd6d7e5b7ea9972, type: 2}
+  wallSolidMaterial: {fileID: 2100000, guid: af4f2a9a18658284c997b32201e0cab3, type: 2}
+  solidifyDuration: 2
 --- !u!4 &346351378
 Transform:
   m_ObjectHideFlags: 0
