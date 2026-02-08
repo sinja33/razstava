@@ -20,6 +20,10 @@ public class PlaneRevealManager : MonoBehaviour
     [SerializeField] private Material floorSolidMaterial;
     [SerializeField] private Material wallSolidMaterial;
     [SerializeField] private float solidifyDuration = 2f;
+
+    [Header("Passthrough Control")]
+    [SerializeField] private Camera mainCamera;
+    [SerializeField] private float passthroughFadeDuration = 1f;
     
     private Dictionary<ARPlane, PlaneRevealState> planeStates = new Dictionary<ARPlane, PlaneRevealState>();
     private bool transitionTriggered = false;
@@ -29,6 +33,9 @@ public class PlaneRevealManager : MonoBehaviour
     public float CurrentCoverage { get; private set; }
     public bool IsComplete => CurrentCoverage >= targetCoverage;
     public bool IsSolidified => solidifyProgress >= 1f;
+
+    private bool isFadingPassthrough = false;
+    private float passthroughFadeProgress = 0f;
     
     // Events
     public System.Action OnScanningComplete;
@@ -124,6 +131,8 @@ public class PlaneRevealManager : MonoBehaviour
         {
             UpdateSolidify();
         }
+
+        UpdatePassthroughFade();
     }
     
     void CheckGaze()
@@ -237,6 +246,7 @@ public class PlaneRevealManager : MonoBehaviour
         if (solidifyProgress >= 1f)
         {
             isSolidifying = false;
+            DisablePassthrough();
             OnSolidifyComplete?.Invoke();
             Debug.Log("Solidify complete! Now in VR room.");
         }
@@ -255,5 +265,42 @@ public class PlaneRevealManager : MonoBehaviour
         transitionTriggered = true;
         OnScanningComplete?.Invoke();
         StartSolidify();
+    }
+
+    // ===== PASSTHROUGH CONTROL =====
+
+    public void DisablePassthrough()
+    {
+        isFadingPassthrough = true;
+        passthroughFadeProgress = 0f;
+    }
+
+    public void EnablePassthrough()
+    {
+        if (mainCamera != null)
+        {
+            mainCamera.clearFlags = CameraClearFlags.SolidColor;
+            mainCamera.backgroundColor = new Color(0, 0, 0, 0);
+        }
+    }
+
+    void UpdatePassthroughFade()
+    {
+        if (!isFadingPassthrough) return;
+        
+        passthroughFadeProgress += Time.deltaTime / passthroughFadeDuration;
+        passthroughFadeProgress = Mathf.Clamp01(passthroughFadeProgress);
+        
+        if (mainCamera != null)
+        {
+            // Fade from transparent (passthrough) to opaque black (VR)
+            mainCamera.backgroundColor = new Color(0, 0, 0, passthroughFadeProgress);
+        }
+        
+        if (passthroughFadeProgress >= 1f)
+        {
+            isFadingPassthrough = false;
+            Debug.Log("Passthrough disabled - now in full VR");
+        }
     }
 }
