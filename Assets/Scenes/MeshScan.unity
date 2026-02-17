@@ -305,10 +305,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeshRevealManager
   meshManager: {fileID: 2129322735}
   cameraTransform: {fileID: 2129322728}
-  revealSpeed: 0.5
-  maxRevealRadius: 2
+  revealRadius: 3
+  edgeSoftness: 0.2
   revealMaterial: {fileID: 2100000, guid: 7aac9352b6a1ae945a7e59154d2c79ca, type: 2}
-  targetCoverage: 0.8
+  targetCoverage: 0.5
+  roomSize: 2
+  floorSolidMaterial: {fileID: 2100000, guid: af4f2a9a18658284c997b32201e0cab3, type: 2}
+  wallSolidMaterial: {fileID: 2100000, guid: af4f2a9a18658284c997b32201e0cab3, type: 2}
+  solidifyDuration: 2
+  mainCamera: {fileID: 2129322734}
+  passthroughFadeDuration: 1
 --- !u!4 &1635533710
 Transform:
   m_ObjectHideFlags: 0

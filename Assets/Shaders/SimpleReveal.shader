@@ -3,9 +3,8 @@ Shader "Custom/SimpleReveal"
     Properties
     {
         _BaseColor ("Base Color", Color) = (0, 1, 1, 0.5)
-        _RevealCenter ("Reveal Center", Vector) = (0, 0, 0, 0)
-        _RevealRadius ("Reveal Radius", Float) = 0
-        _EdgeSoftness ("Edge Softness", Float) = 1
+        _RevealRadius ("Reveal Radius", Float) = 2
+        _EdgeSoftness ("Edge Softness", Float) = 0.5
     }
     
     SubShader
@@ -26,10 +25,13 @@ Shader "Custom/SimpleReveal"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseColor;
-                float3 _RevealCenter;
                 float _RevealRadius;
                 float _EdgeSoftness;
+                float3 _CurrentPos;
+                int _PointCount;
             CBUFFER_END
+            
+            float4 _RevealPoints[64];
 
             struct Attributes
             {
@@ -57,14 +59,24 @@ Shader "Custom/SimpleReveal"
 
             half4 frag(Varyings IN) : SV_Target
             {
-                // Calculate distance from reveal center
-                float dist = distance(IN.positionWS, _RevealCenter);
+                float minDist = 9999;
+                
+                // Check distance to all revealed points
+                for (int i = 0; i < _PointCount; i++)
+                {
+                    float dist = distance(IN.positionWS, _RevealPoints[i].xyz);
+                    minDist = min(minDist, dist);
+                }
+                
+                // Also check current camera position
+                float currentDist = distance(IN.positionWS, _CurrentPos);
+                minDist = min(minDist, currentDist);
                 
                 // Calculate alpha based on distance
-                float alpha = saturate((_RevealRadius - dist) / _EdgeSoftness);
+                float alpha = saturate((_RevealRadius - minDist) / _EdgeSoftness);
                 
-                // If outside reveal radius, fully transparent
-                if (dist > _RevealRadius)
+                // Discard if not revealed
+                if (alpha < 0.01)
                     discard;
                 
                 return half4(_BaseColor.rgb, _BaseColor.a * alpha);
