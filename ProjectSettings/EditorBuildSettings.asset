@@ -20,6 +20,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MeshScan.unity
     guid: 6de76d9f211846b4085303d81c201aab
+  - enabled: 0
+    path: Assets/Scenes/EffectMeshTest.unity
+    guid: 7fd2f6cca22d8ba479714e13c84bd1da
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 31f47c8ae500f7d478865c807890543d, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
